@@ -1,0 +1,94 @@
+Добро пожаловать в инструкцию по установке симулятора Gazebo с образом квадрокоптера Clover. Для установки этого приложения понадобится ОС Ubuntu 20.04 или виртуальная машина (файл clover-devel_v1.4.ova).
+
+Инструкция для OC Ubuntu 20.04:
+
+Установите ROS используя официальную документацию: https://wiki.ros.org/noetic/Installation/Ubuntu
+
+Добавьте выполнение инициализирующего скрипта ROS setup.bash в ваш файл .bashrc:
+
+echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
+source ~/.bashrc
+
+Установите необходимые инструменты, которые понадобятся для дальнейшей установки:
+
+sudo apt install build-essential git python3-pip python3-rosdep
+
+
+Создание рабочего пространства для симулятора
+Создайте рабочее пространство:
+
+mkdir -p ~/catkin_ws/src
+cd ~/catkin_ws
+catkin_make
+echo "source ~/catkin_ws/devel/setup.bash" >> ~/.bashrc
+source ~/.bashrc
+
+Склонируйте исходный код пакетов Clover:
+
+cd ~/catkin_ws/src
+git clone --depth 1 https://github.com/CopterExpress/clover
+git clone --depth 1 https://github.com/CopterExpress/ros_led
+git clone --depth 1 https://github.com/ethz-asl/mav_comm
+
+Установите все зависимости, используя rosdep:
+
+cd ~/catkin_ws
+sudo rosdep init
+rosdep update
+rosdep install --from-paths src --ignore-src -y
+Установите Python-зависимости:
+
+sudo /usr/bin/python3 -m pip install -r ~/catkin_ws/src/clover/clover/requirements.txt
+
+
+Загрузка исходного кода PX4
+Сборка PX4 будет осуществлена вместе с другими пакетами в нашем рабочем пространстве. Вы можете загрузить его прямо в рабочее пространство или поместить куда-нибудь и создать симлинк к ~/catkin_ws/src. Нам также нужно будет поместить его подмодули sitl_gazebo и mavlink в ~/catkin_ws/src.
+
+Склонируйте исходный код PX4 и создайте необходимые симлинки:
+
+git clone --recursive --depth 1 --branch v1.12.3 https://github.com/PX4/PX4-Autopilot.git ~/PX4-Autopilot
+ln -s ~/PX4-Autopilot ~/catkin_ws/src/
+ln -s ~/PX4-Autopilot/Tools/sitl_gazebo ~/catkin_ws/src/
+ln -s ~/PX4-Autopilot/mavlink ~/catkin_ws/src/
+
+
+Установка зависимостей PX4
+PX4 имеет свой собственный скрипт для установки зависимостей. Воспользуемся им:
+
+cd ~/catkin_ws/src/PX4-Autopilot/Tools/setup
+sudo ./ubuntu.sh
+Он установит все, что нужно для сборки PX4 и SITL.
+
+Установите дополнительные необходимые Python-пакеты:
+
+pip3 install --user toml
+
+Добавление рамы Клевера
+Добавьте в PX4 раму Клевера с помощью следующей команды:
+
+ln -s ~/catkin_ws/src/clover/clover_simulation/airframes/* ~/PX4-Autopilot/ROMFS/px4fmu_common/init.d-posix/airframes/
+
+Установка датасетов geographiclib
+Для mavros нужны датасеты geographiclib:
+
+sudo /opt/ros/noetic/lib/mavros/install_geographiclib_datasets.sh
+
+Сборка симулятора
+После установки всех зависимостей можно начинать сборку рабочего пространства:
+
+cd ~/catkin_ws
+catkin_make -j1
+
+Запуск симулятора
+Чтобы удостовериться в том, что все было собрано корректно, попробуйте запустить симулятор:
+
+# Не забудьте сначала активировать ваше рабочее пространство
+source ~/catkin_ws/devel/setup.bash
+roslaunch clover_simulation simulator.launch
+
+
+
+Для запуска автономного полета замените файл flight.py в директории ~/catkin_ws/src/clover/clover/examples на представленный в репозитории.
+
+Для сохранения фото с камеры квадрокоптера замените файл camera_sensor.urdf.xacro в директории ~/catkin_ws/src/clover/clover_description/urdf на представленный в репозитории.
+!В файле необходимо поменять путь /home/alterpath/pic/tmp/camera_save (15 строчка) на свой путь, куда будут сохраняться фото.
