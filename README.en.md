@@ -28,3 +28,7 @@ Python, ROS Noetic, Clover (COEX), Gazebo, TensorFlow (Keras), pandas, Matplotli
 ## License
 
 [MIT](LICENSE)
+
+---
+
+<sub>The code was published on GitHub in October 2024; the README was added in November 2026.</sub>
